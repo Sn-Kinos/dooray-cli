@@ -1191,4 +1191,111 @@ export class DoorayApiClient {
       throw await toDoorayCliError(e);
     }
   }
+
+  // ─── Endpoint registry (ADR-069) ────────────────────
+  // 아래 셋은 src/api/endpoints/ 의 명세 표가 부른다. 경로는 명세가 소유하므로 여기에는 리터럴이 없다.
+
+  async callEndpoint(
+    method: HttpMethod,
+    path: string,
+    searchParams: Record<string, string>,
+    json?: unknown,
+    headers: Record<string, string> = {},
+  ): Promise<unknown> {
+    try {
+      const res = await this.api(path, {
+        method,
+        searchParams,
+        headers,
+        ...(json === undefined ? {} : { json }),
+      });
+      const text = await res.text();
+      return text ? parseJsonPreservingLargeIntegers(text) : {};
+    } catch (e) {
+      throw await toDoorayCliError(e);
+    }
+  }
+
+  /**
+   * multipart 로 파일 하나를 올린다. 서버가 307 로 파일 서버를 가리키면 그곳에 같은 본문을 다시 보낸다.
+   * fields 는 file 보다 먼저 붙인다. 위키 파일 업로드가 필드 순서에 기대기 때문이다 (ADR-029).
+   */
+  async uploadEndpointFile(
+    method: HttpMethod,
+    path: string,
+    searchParams: Record<string, string>,
+    fields: Record<string, string>,
+    filePath: string,
+    headers: Record<string, string> = {},
+  ): Promise<unknown> {
+    const fileBuffer = await readFile(filePath);
+    const buildFormData = (): FormData => {
+      const fd = new FormData();
+      for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+      fd.append("file", new Blob([fileBuffer]), basename(filePath));
+      return fd;
+    };
+    const url = this.baseUrl + path + "?" + new URLSearchParams(searchParams).toString();
+    let res = await fetch(url, {
+      method,
+      headers: { ...headers, Authorization: this.authHeader },
+      body: buildFormData(),
+      redirect: "manual",
+    });
+    if (res.status === 307 || res.status === 302) {
+      const location = res.headers.get("location");
+      if (!location) {
+        throw new DoorayCliError("파일 업로드 리다이렉트 URL을 받지 못했습니다.", EXIT_API_ERROR);
+      }
+      res = await fetch(location, {
+        method,
+        headers: { ...headers, Authorization: this.authHeader },
+        body: buildFormData(),
+      });
+    }
+    return readRawResponse(res, "파일 업로드");
+  }
+
+  /** 파일 본문을 받는다. 서버가 307 로 파일 서버를 가리키면 따라간다 (ADR-015). */
+  async downloadEndpointFile(
+    path: string,
+    searchParams: Record<string, string>,
+  ): Promise<{ buffer: ArrayBuffer; fileName: string }> {
+    const url = this.baseUrl + path + "?" + new URLSearchParams(searchParams).toString();
+    let res = await fetch(url, {
+      headers: { Authorization: this.authHeader },
+      redirect: "manual",
+    });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) {
+        throw new DoorayCliError("파일 다운로드 리다이렉트 URL을 받지 못했습니다.", EXIT_API_ERROR);
+      }
+      res = await fetch(location, { headers: { Authorization: this.authHeader } });
+    }
+    if (!res.ok) await readRawResponse(res, "파일 다운로드");
+    const disposition = res.headers.get("content-disposition");
+    const fileId = path.split("/").pop() ?? "download";
+    const fileName = parseContentDispositionFileName(disposition) ?? fallbackFileName(fileId, undefined, disposition);
+    return { buffer: await res.arrayBuffer(), fileName };
+  }
+}
+
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+/** ky 를 거치지 않은 fetch 응답을 읽는다. 실패면 Dooray 의 resultMessage 를 담아 던진다. */
+async function readRawResponse(res: Response, action: string): Promise<unknown> {
+  const text = await res.text();
+  let body: unknown = {};
+  try {
+    body = text ? parseJsonPreservingLargeIntegers(text) : {};
+  } catch {
+    body = { raw: text };
+  }
+  if (res.ok) return body;
+  const message = (body as Partial<DoorayErrorResponse>).header?.resultMessage;
+  throw new DoorayCliError(
+    `${action} 실패 (${res.status})${message ? `: ${normalizeDoorayMessage(message)}` : ""}`,
+    res.status === 401 || res.status === 403 ? EXIT_AUTH_ERROR : EXIT_API_ERROR,
+  );
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -153,6 +153,19 @@ export function extractImplEndpoints(source) {
 }
 
 /**
+ * `src/api/endpoints/*.ts` 명세 표에서 endpoint 를 뽑는다. `method: "X", path: "..."` 가 한 줄에 붙어 있는 모양만 읽는다 (ADR-069).
+ *
+ * @returns {string[]}
+ */
+export function extractSpecEndpoints(source) {
+  const found = new Set();
+  for (const match of source.matchAll(/method:\s*"([A-Z]+)",\s*path:\s*"([^"]+)"/g)) {
+    found.add(`${match[1]} ${normalizePath(match[2])}`);
+  }
+  return [...found].sort();
+}
+
+/**
  * 공식 목록 스냅샷 본문을 파싱한다. `#` 로 시작하는 줄과 빈 줄은 건너뛴다.
  *
  * @returns {string[]} `"<METHOD> <경로>"` 형태의 고유 목록
@@ -230,9 +243,25 @@ function printHuman(result, implCount, officialCount) {
 function main(argv) {
   const repoRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..");
   const implSource = readFileSync(join(repoRoot, "src/api/client.ts"), "utf8");
-  const officialContent = readFileSync(join(repoRoot, "docs/api/official-endpoints.txt"), "utf8");
+  const specDir = join(repoRoot, "src/api/endpoints");
+  const specSource = readdirSync(specDir)
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+    .map((f) => readFileSync(join(specDir, f), "utf8"))
+    .join("\n");
+  // 서비스 API 와 관리 API 는 공식 문서 페이지가 다르다. 스냅샷도 나눠 두고 합쳐 대조한다.
+  const officialContent = ["official-endpoints.txt", "official-admin-endpoints.txt"]
+    .map((f) => readFileSync(join(repoRoot, "docs/api", f), "utf8"))
+    .join("\n");
 
-  const { endpoints: implEndpoints, nonLiteral } = extractImplEndpoints(implSource);
+  const { endpoints: clientEndpoints, nonLiteral } = extractImplEndpoints(implSource);
+  // 메신저 스레드 두 경로는 client 가 변수로 받는다. 경로를 만드는 쪽에서 읽는다 (ADR-052).
+  const threadSource = readFileSync(join(repoRoot, "src/api/messenger-thread-request.ts"), "utf8");
+  const threadEndpoints = [...threadSource.matchAll(/path: `([^`]+)`/g)].map(
+    (m) => `POST ${normalizePath(replaceInterpolations(m[1]))}`,
+  );
+  const implEndpoints = [
+    ...new Set([...clientEndpoints, ...threadEndpoints, ...extractSpecEndpoints(specSource)]),
+  ].sort();
   const officialEndpoints = parseOfficialEndpoints(officialContent);
   const result = compareEndpoints(implEndpoints, officialEndpoints);
 
@@ -241,8 +270,8 @@ function main(argv) {
   } else {
     printHuman(result, implEndpoints.length, officialEndpoints.length);
     // 감사에 구멍이 있다는 것을 알린다. 경로를 변수나 함수 호출로 만든 호출은 읽을 수 없다.
-    if (nonLiteral > 0) {
-      console.warn(`\n주의: 경로가 리터럴이 아닌 호출 ${nonLiteral}건은 감사 대상에서 제외됐다.`);
+    if (nonLiteral > threadEndpoints.length) {
+      console.warn(`\n주의: 경로가 리터럴이 아닌 호출 ${nonLiteral - threadEndpoints.length}건은 감사 대상에서 제외됐다.`);
       console.warn("그 호출의 endpoint 는 이 대조에 나타나지 않는다.");
     }
   }

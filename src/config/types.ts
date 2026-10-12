@@ -10,6 +10,10 @@ export interface Config {
   smtpHost?: string;
   smtpPort?: number;
   trackLastRun?: boolean;
+  /** 관리 API 토큰. 개인 토큰과 따로 메일로 발급받는다 */
+  adminApiKey?: string;
+  /** 없으면 baseUrl 의 `api.` 를 `admin-api.` 로 바꿔 쓴다 */
+  adminBaseUrl?: string;
 }
 
 /** `config set` 이 받는 키. 알 수 없는 키를 거절할 때 이 목록을 안내한다. */
@@ -24,6 +28,8 @@ export const CONFIG_SET_KEYS = [
   "smtp-host",
   "smtp-port",
   "track-last-run",
+  "admin-api-key",
+  "admin-base-url",
 ] as const;
 
 export const API_ENDPOINTS = {

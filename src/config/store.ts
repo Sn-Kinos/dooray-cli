@@ -120,6 +120,8 @@ function invalidConfigReason(value: unknown): string | null {
     "imapUsername",
     "imapPassword",
     "smtpHost",
+    "adminApiKey",
+    "adminBaseUrl",
   ];
   for (const field of optionalStringFields) {
     if (config[field] !== undefined && typeof config[field] !== "string") {
@@ -250,6 +252,12 @@ export async function setConfigValue(
       break;
     case "track-last-run":
       config.trackLastRun = parseBoolean(key, value);
+      break;
+    case "admin-api-key":
+      config.adminApiKey = value;
+      break;
+    case "admin-base-url":
+      config.adminBaseUrl = value;
       break;
     default:
       throw new DoorayCliError(

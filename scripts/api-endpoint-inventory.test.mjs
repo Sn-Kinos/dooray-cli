@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   compareEndpoints,
   extractImplEndpoints,
+  extractSpecEndpoints,
   parseOfficialEndpoints,
 } from "./api-endpoint-inventory.mjs";
 
@@ -130,6 +131,37 @@ describe("extractImplEndpoints", () => {
     const source = ['this.api.get("wiki/v1/wikis");', 'this.api.get("wiki/v1/wikis");'].join("\n");
 
     expect(extractImplEndpoints(source).endpoints).toEqual(["GET wiki/v1/wikis"]);
+  });
+});
+
+describe("extractSpecEndpoints", () => {
+  it("명세 표의 method 와 path 를 정규화해 뽑는다", () => {
+    const source = [
+      '{ command: "drive list", method: "GET", path: "drive/v1/drives" },',
+      '{ command: "drive file copy", method: "POST", path: "drive/v1/drives/{drive-id}/files/{file-id}/copy",',
+    ].join("\n");
+
+    expect(extractSpecEndpoints(source)).toEqual([
+      "GET drive/v1/drives",
+      "POST drive/v1/drives/{id}/files/{id}/copy",
+    ]);
+  });
+
+  it("저장소의 명세 표를 하나도 빠뜨리지 않고 읽고, 모두 공식 목록에 있다", async () => {
+    const { ENDPOINTS } = await import("../src/api/endpoints/index.ts");
+    const dir = join(repoRoot, "src/api/endpoints");
+    const source = readdirSync(dir).map((f) => readFileSync(join(dir, f), "utf8")).join("\n");
+    const official = new Set(
+      parseOfficialEndpoints(
+        ["official-endpoints.txt", "official-admin-endpoints.txt"]
+          .map((f) => readFileSync(join(repoRoot, "docs/api", f), "utf8"))
+          .join("\n"),
+      ),
+    );
+    const fromTable = parseOfficialEndpoints(ENDPOINTS.map((s) => `${s.method} ${s.path}`).join("\n"));
+
+    expect(extractSpecEndpoints(source)).toEqual(fromTable);
+    expect(fromTable.filter((e) => !official.has(e))).toEqual([]);
   });
 });
 

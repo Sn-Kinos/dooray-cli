@@ -53,6 +53,10 @@ import { mailLogoutCommand } from "./commands/mail/logout.js";
 import { messengerCommand } from "./commands/messenger/index.js";
 import { calendarCommand } from "./commands/calendar/index.js";
 import { feedbackCommand } from "./commands/feedback.js";
+import { sideAppCommand } from "./commands/side-app.js";
+import { ssoCommand } from "./commands/sso.js";
+import { mountEndpoints } from "./commands/endpoint-command.js";
+import { ENDPOINTS, GROUP_DESCRIPTIONS } from "./api/endpoints/index.js";
 import { DoorayCliError } from "./utils/errors.js";
 import { sanitizeArgv } from "./utils/argv-sanitize.js";
 import { attachUsageHint } from "./utils/unknown-option-hint.js";
@@ -164,6 +168,11 @@ program.addCommand(mailCommand);
 program.addCommand(messengerCommand);
 program.addCommand(calendarCommand);
 program.addCommand(feedbackCommand);
+program.addCommand(sideAppCommand);
+program.addCommand(ssoCommand);
+
+// ADR-069: 명세 표의 endpoint 를 기존 그룹 아래에 단다. 직접 쓴 명령을 먼저 등록해야 겹침을 잡는다.
+mountEndpoints(program, ENDPOINTS, GROUP_DESCRIPTIONS);
 
 // ADR-058: 등록이 끝난 뒤 명령 나무 전체에 오류 안내 후크를 건다.
 attachUsageHint(program, "");

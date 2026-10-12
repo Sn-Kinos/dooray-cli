@@ -76,7 +76,7 @@ GET /reservation/v1/resources
 GET /reservation/v1/resources/{resource-id}
 GET /wiki/v1/pages/{page-id}
 GET /wiki/v1/wikis
-GET /wiki/v1/wikis/{wiki-id}/attach
+GET /wiki/v1/wikis/{wiki-id}/attachFiles/{attach-file-id}
 GET /wiki/v1/wikis/{wiki-id}/pages
 GET /wiki/v1/wikis/{wiki-id}/pages/{page-id}
 GET /wiki/v1/wikis/{wiki-id}/pages/{page-id}/comments

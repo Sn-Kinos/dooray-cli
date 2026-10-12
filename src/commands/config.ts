@@ -30,7 +30,7 @@ export const configCommand = new Command("config")
 configCommand
   .command("set")
   .description("설정 값 저장")
-  .argument("<key>", "설정 키 (api-key, base-url)")
+  .argument("<key>", "설정 키 (api-key, base-url, admin-api-key, admin-base-url 등)")
   .argument("<value>", "설정 값 (`-` 이면 stdin 에서 읽음)")
   .action(async (key: string, value: string) => {
     const { cacheCleared } = await updateConfigValue(
@@ -59,13 +59,15 @@ configCommand
     const display: Record<string, string> = {
       "api-key": config.apiKey ? maskApiKey(config.apiKey) : "(미설정)",
       "base-url": config.baseUrl || "(미설정)",
+      "admin-api-key": config.adminApiKey ? maskApiKey(config.adminApiKey) : "(미설정)",
+      "admin-base-url": config.adminBaseUrl || "(미설정)",
     };
 
     if (key) {
       const val = display[key];
       if (val === undefined) {
         throw new DoorayCliError(
-          `알 수 없는 설정 키: ${key}\n사용 가능한 키: api-key, base-url`,
+          `알 수 없는 설정 키: ${key}\n사용 가능한 키: ${Object.keys(display).join(", ")}`,
           EXIT_CONFIG_ERROR,
         );
       }
