@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   startSpinner: vi.fn(),
   stopSpinner: vi.fn(),
   writeFile: vi.fn(),
+  mkdir: vi.fn(),
+  stat: vi.fn(),
   client: {
     downloadPostFile: vi.fn(),
   },
@@ -36,6 +38,8 @@ vi.mock("../../../../utils/spinner.js", () => ({
 
 vi.mock("node:fs/promises", () => ({
   writeFile: mocks.writeFile,
+  mkdir: mocks.mkdir,
+  stat: mocks.stat,
 }));
 
 async function createCommandTree(): Promise<Command> {
@@ -85,6 +89,8 @@ beforeEach(() => {
     fileName: "report.txt",
   });
   mocks.writeFile.mockResolvedValue(undefined);
+  mocks.mkdir.mockResolvedValue(undefined);
+  mocks.stat.mockRejectedValue(new Error("ENOENT"));
 });
 
 describe("post comment file download 출력 형식", () => {
@@ -105,5 +111,27 @@ describe("post comment file download 출력 형식", () => {
       fileName: "report.txt",
       size: 5,
     });
+  });
+
+  it("--output-file 은 그 경로로 저장하고 JSON 의 fileName 은 그 이름이다", async () => {
+    const program = await createCommandTree();
+    await program.parseAsync([...baseArgs.slice(0, -2), "--output-file", "/tmp/x/내 이름.txt", "--json"]);
+    expect(mocks.writeFile).toHaveBeenCalledWith("/tmp/x/내 이름.txt", expect.any(Uint8Array));
+    expect(JSON.parse(written)).toMatchObject({ outputPath: "/tmp/x/내 이름.txt", fileName: "내 이름.txt" });
+  });
+
+  it("--output-file 과 --out 을 함께 주면 --out 을 무시하고 stderr 로 경고한다", async () => {
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const program = await createCommandTree();
+    await program.parseAsync([...baseArgs, "--output-file", "/tmp/x/a.txt"]);
+    expect(mocks.writeFile).toHaveBeenCalledWith("/tmp/x/a.txt", expect.any(Uint8Array));
+    expect(err).toHaveBeenCalledWith(expect.stringContaining("--out"));
+  });
+
+  it("--output-file 이 기존 디렉터리면 종료 코드 3 으로 거절한다", async () => {
+    mocks.stat.mockResolvedValue({ isDirectory: () => true });
+    const program = await createCommandTree();
+    await expect(program.parseAsync([...baseArgs.slice(0, -2), "--output-file", "/tmp/x"])).rejects.toMatchObject({ exitCode: 3 });
+    expect(mocks.writeFile).not.toHaveBeenCalled();
   });
 });
