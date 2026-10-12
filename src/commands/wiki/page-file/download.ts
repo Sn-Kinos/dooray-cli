@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { getConfigOrThrow } from "../../../config/store.js";
 import { DoorayApiClient } from "../../../api/client.js";
 import {
@@ -80,8 +80,8 @@ export const wikiPageFileDownloadCommand = new Command("download")
     startSpinner("파일 다운로드 중...");
     try {
       const { buffer, fileName } = await client.downloadWikiPageFile(wikiId, pageId, fileId);
-      // CLI7: path-traversal 방지 — basename + decodeURIComponent
-      const safeName = basename(decodeURIComponent(fileName));
+      // 클라이언트가 이미 basename·NFC 로 정리한 이름이다 (ADR-067)
+      const safeName = fileName;
       const outputPath = join(opts.output, safeName);
       await writeFile(outputPath, Buffer.from(buffer));
       stopSpinner(true, `다운로드 완료: ${outputPath}`);

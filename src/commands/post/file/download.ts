@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { getConfigOrThrow } from "../../../config/store.js";
 import { DoorayApiClient } from "../../../api/client.js";
 import { resolvePostInput } from "../../../resolvers/post-input.js";
@@ -73,8 +73,8 @@ export const fileDownloadCommand = new Command("download")
     });
     const { buffer, fileName } = await client.downloadPostFile(projectId, postId, fileId);
 
-    // CLI7: path-traversal 방지 — basename + decodeURIComponent
-    const safeName = basename(decodeURIComponent(fileName));
+    // 클라이언트가 이미 basename·NFC 로 정리한 이름이다 (ADR-067)
+    const safeName = fileName;
     const outputPath = join(opts.output, safeName);
     await writeFile(outputPath, Buffer.from(buffer));
     stopSpinner(true, "다운로드 완료");
