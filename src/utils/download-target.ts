@@ -16,12 +16,11 @@ export interface DownloadTargetOptions {
   fileName: string;
 }
 
-export async function saveDownload(o: DownloadTargetOptions, data: Uint8Array): Promise<string> {
-  if (o.outputFile === undefined) {
-    const outputPath = join(o.dirValue, o.fileName);
-    await writeFile(outputPath, data);
-    return outputPath;
-  }
+// 파라미터 오류는 API 호출과 spinner 앞에서 막는다. 경고도 여기서 한 번만 낸다.
+export async function checkOutputFile(
+  o: Pick<DownloadTargetOptions, "command" | "dirKey" | "dirFlag" | "outputFile">,
+): Promise<void> {
+  if (o.outputFile === undefined) return;
   if (o.outputFile.trim() === "" || /[\\/]$/.test(o.outputFile)) {
     throw new DoorayCliError("--output-file 은 파일 경로여야 합니다 (디렉터리 경로 불가).", EXIT_PARAM_ERROR);
   }
@@ -34,6 +33,15 @@ export async function saveDownload(o: DownloadTargetOptions, data: Uint8Array): 
   }
   if (o.command.getOptionValueSource(o.dirKey) === "cli") {
     process.stderr.write(`경고: --output-file 을 주면 ${o.dirFlag} 는 무시합니다.\n`);
+  }
+}
+
+// 검사는 checkOutputFile 이 끝냈다고 보고 쓰기만 한다.
+export async function saveDownload(o: DownloadTargetOptions, data: Uint8Array): Promise<string> {
+  if (o.outputFile === undefined) {
+    const outputPath = join(o.dirValue, o.fileName);
+    await writeFile(outputPath, data);
+    return outputPath;
   }
   await mkdir(dirname(o.outputFile), { recursive: true });
   await writeFile(o.outputFile, data);

@@ -6,7 +6,7 @@ import {
   resolveCommentFileInput,
   FILE_ID_SECONDARY_LABEL,
 } from "../../../../resolvers/comment-file-input.js";
-import { saveDownload } from "../../../../utils/download-target.js";
+import { checkOutputFile, saveDownload } from "../../../../utils/download-target.js";
 import { startSpinner, stopSpinner } from "../../../../utils/spinner.js";
 import type { OutputOptions } from "../../../../formatters/table.js";
 import { emitDownloadResult } from "../../../../formatters/file-output.js";
@@ -27,6 +27,7 @@ export const downloadCommentFileCommand = new Command("download")
   .option("--output-file <path>", "저장할 파일 경로 (지정하면 --out 는 무시)")
   .action(async (arg1, arg2, arg3, arg4, opts) => {
     const globalOpts = downloadCommentFileCommand.optsWithGlobals() as OutputOptions;
+    await checkOutputFile({ command: downloadCommentFileCommand, dirKey: "out", dirFlag: "--out", outputFile: opts.outputFile });
     const config = await getConfigOrThrow();
     const client = new DoorayApiClient(config.apiKey, config.baseUrl);
 
@@ -43,22 +44,27 @@ export const downloadCommentFileCommand = new Command("download")
     });
 
     startSpinner("파일 다운로드 중...");
-    const { buffer, fileName } = await client.downloadPostFile(projectId, postId, fileId);
+    try {
+      const { buffer, fileName } = await client.downloadPostFile(projectId, postId, fileId);
 
-    const safeName = fileName;
-    const outputPath = await saveDownload(
-      {
-        command: downloadCommentFileCommand,
-        dirKey: "out",
-        dirFlag: "--out",
-        dirValue: opts.out,
-        outputFile: opts.outputFile,
-        fileName: safeName,
-      },
-      new Uint8Array(buffer),
-    );
-    stopSpinner(true, "다운로드 완료");
+      const safeName = fileName;
+      const outputPath = await saveDownload(
+        {
+          command: downloadCommentFileCommand,
+          dirKey: "out",
+          dirFlag: "--out",
+          dirValue: opts.out,
+          outputFile: opts.outputFile,
+          fileName: safeName,
+        },
+        new Uint8Array(buffer),
+      );
+      stopSpinner(true, "다운로드 완료");
 
-    // ADR-031: --json / --quiet / plain 3 모드 분기
-    emitDownloadResult(globalOpts, { outputPath, fileName: basename(outputPath), size: buffer.byteLength });
+      // ADR-031: --json / --quiet / plain 3 모드 분기
+      emitDownloadResult(globalOpts, { outputPath, fileName: basename(outputPath), size: buffer.byteLength });
+    } catch (e) {
+      stopSpinner(false);
+      throw e;
+    }
   });

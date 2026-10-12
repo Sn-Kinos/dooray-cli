@@ -47,3 +47,46 @@ describe("downloadPostFile 파일명", () => {
     expect(api.get).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("downloadWikiPageFile 파일명", () => {
+  function wikiClient() {
+    const c = new DoorayApiClient("key", "https://example.dooray.com");
+    const api = {
+      get: vi.fn((url: string) => {
+        if (url.endsWith("/pages/q")) {
+          return {
+            json: async () => ({
+              result: {
+                files: [{ id: "a", name: "첨부.pdf" }],
+                images: [{ id: "img1", name: "이미지 그림.png".normalize("NFD") }],
+              },
+            }),
+          };
+        }
+        return Promise.resolve(new Response(null, { status: 307, headers: { location: "https://example.dooray.com/redirected" } }));
+      }),
+    };
+    (c as unknown as { api: unknown }).api = api;
+    return { c, api };
+  }
+
+  it("encoded-word 를 푼다", async () => {
+    stubDownload('attachment; filename="=?UTF-8?Q?a_b.txt?="', {});
+    const { c, api } = wikiClient();
+    expect((await c.downloadWikiPageFile("w", "q", "a")).fileName).toBe("a b.txt");
+    expect(api.get).toHaveBeenCalledTimes(1);
+  });
+
+  it("디코딩 실패 시 images 에만 있는 fileId 도 목록에서 이름을 찾는다", async () => {
+    stubDownload('attachment; filename="=?X-UNKNOWN?Q?a?="', {});
+    const { c } = wikiClient();
+    expect((await c.downloadWikiPageFile("w", "q", "img1")).fileName).toBe("이미지 그림.png");
+  });
+
+  it("knownName 을 주면 getWikiPage 를 부르지 않는다", async () => {
+    stubDownload(null, {});
+    const { c, api } = wikiClient();
+    expect((await c.downloadWikiPageFile("w", "q", "a", "known.pdf")).fileName).toBe("known.pdf");
+    expect(api.get).toHaveBeenCalledTimes(1);
+  });
+});

@@ -132,6 +132,15 @@ describe("post comment file download 출력 형식", () => {
     mocks.stat.mockResolvedValue({ isDirectory: () => true });
     const program = await createCommandTree();
     await expect(program.parseAsync([...baseArgs.slice(0, -2), "--output-file", "/tmp/x"])).rejects.toMatchObject({ exitCode: 3 });
+    expect(mocks.client.downloadPostFile).not.toHaveBeenCalled();
+    expect(mocks.startSpinner).not.toHaveBeenCalled();
     expect(mocks.writeFile).not.toHaveBeenCalled();
+  });
+
+  it("저장 중 오류가 나면 spinner 를 실패로 닫고 다시 던진다", async () => {
+    mocks.writeFile.mockRejectedValue(new Error("EACCES"));
+    const program = await createCommandTree();
+    await expect(program.parseAsync(baseArgs)).rejects.toThrow("EACCES");
+    expect(mocks.stopSpinner).toHaveBeenCalledWith(false);
   });
 });
