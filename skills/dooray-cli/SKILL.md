@@ -20,6 +20,7 @@ NHN Dooray REST API 를 래핑한 CLI 다. 이 파일은 라우터이므로, 작
 | 메일 원본 선택, 답장 전 확인 | [mail.md](references/mail.md) |
 | 메신저 대화방 찾기, 메시지 읽기, 스레드 보고 | [messenger.md](references/messenger.md) |
 | 캘린더 기간 조회, 일정 상세, 참석자 | [calendar.md](references/calendar.md) |
+| 드라이브, 예약, 주소록, 웹훅, 일정·대화방·프로젝트 쓰기, 관리 API 등 위에 없는 공식 API 전부 | [api-commands.md](references/api-commands.md) |
 
 ## 대상 지정 방법
 

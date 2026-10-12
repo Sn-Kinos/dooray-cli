@@ -21,6 +21,11 @@ Dooray 공식 API 문서: [https://helpdesk.dooray.com/share/pages/9wWo-xwiR66BO
 [ADR-046](docs/adr/046-official-api-doc-precedence.md)을 참고한다.
 
 구현된 endpoint 와 공식 목록을 대조하려면 `pnpm api:inventory` 를 돌린다.
+대조 대상은 `src/api/client.ts` 와 명세 표 `src/api/endpoints/*.ts` 이고, 공식 목록은 서비스 API(`docs/api/official-endpoints.txt`)와
+관리 API(`docs/api/official-admin-endpoints.txt`) 두 스냅샷이다.
+
+이름 해석·편집기·표 출력처럼 판단이 필요 없는 endpoint 는 명령 파일을 쓰지 않고 명세 표에 한 줄 더한다.
+명령은 `src/commands/endpoint-command.ts` 가 만든다 ([ADR-069](docs/adr/069-endpoint-spec-table.md)).
 
 「구현에 있고 공식에 없는 것」 이 0건이 아니면 공식 문서를 열어 비공식 경로인지 스냅샷이 낡은 것인지 확인한다.
 스냅샷이 낡았으면 `docs/api/official-endpoints.txt` 를 갱신하고, 비공식 경로인데 쓰기로 정했으면
@@ -77,6 +82,8 @@ dooray                # 글로벌 링크 시
 - **출력**: `--json` 은 raw 유지, `--quiet` 은 식별자만
   - 보강한 값이 필요하면 그것을 명시하는 옵션을 둔다. `post get --with-tag-names` 가 그 형태다.
     옵션을 주지 않은 호출의 출력은 달라지지 않는다 (ADR-056)
+- **명세 표로 만든 명령**: 경로의 id 는 positional, 쿼리는 kebab-case 옵션, JSON 본문은 `--data`/`--data-file`(`-` 면 stdin)이다.
+  `admin` 아래 명령은 관리 API 토큰(`config set admin-api-key`)으로 부른다
 - **파괴적 삭제 명령**: 확인을 기본으로 하고 `-y`/`--yes` 로 생략한다 (ADR-036)
   - TTY 확인의 기본값은 아니오다. 사용자가 거절하면 API를 호출하지 않고 정상 취소한다
   - non-TTY에서 `-y`/`--yes`가 없으면 설정 조회·resolver·API 호출 전에 `EXIT_PARAM_ERROR`(3)로 중단한다

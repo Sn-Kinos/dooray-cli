@@ -87,8 +87,11 @@ CLI 를 새 버전으로 올린 뒤에는 `dooray skill update` 를 한 번 실�
 | 프로젝트 | 프로젝트, 멤버, 태그, 워크플로우, 템플릿 조회와 태그 생성 | `dooray project` | [업무와 위키](docs/guide/post-wiki.md#프로젝트-태그-만들기) |
 | 메신저 | 1:1 메시지, 대화방 메시지, 스레드, 대화방 목록, 메시지 조회 | `dooray messenger` | [메신저](docs/guide/messenger.md) |
 | 메일 | 목록, 상세 조회, 발송, 답장 | `dooray mail` | `dooray mail --help` |
-| 캘린더 | 캘린더와 일정 조회 (읽기 전용) | `dooray calendar` | [캘린더](docs/guide/calendar.md) |
+| 캘린더 | 캘린더와 일정 조회, 일정 생성·수정·삭제 | `dooray calendar` | [캘린더](docs/guide/calendar.md) |
 | 멤버 | 조직 멤버 검색과 상세 조회 | `dooray member` | `dooray member --help` |
+| 드라이브·예약·주소록 | 파일 올리기·받기·이동, 공유 링크, 자원 예약, 주소록 검색 | `dooray drive` `reservation` `contacts` | [공식 API 전체 명령](docs/guide/api-commands.md) |
+| 관리 | 멤버·부서·메일 규칙·접근 규칙 관리 (관리 API 토큰 필요) | `dooray admin` | [공식 API 전체 명령](docs/guide/api-commands.md#관리-api) |
+| 사이드 앱·SSO | 커스텀 사이드 앱 서버 실행과 JWT 검증, SSO(OAuth) 연동 값 점검 | `dooray side-app` `sso` | [공식 API 전체 명령](docs/guide/api-commands.md#커스텀-사이드-앱) |
 
 ## 자주 쓰는 명령
 
@@ -138,6 +141,7 @@ dooray post comment add --id "$POST_ID" --body "시작합니다"
 | [업무와 위키](docs/guide/post-wiki.md) | 태그와 기간으로 거르기, 본문 일부 치환, 본문 형식, 멘션, 첨부 파일, 삭제 확인 |
 | [메신저](docs/guide/messenger.md) | 메시지 보내기, 스레드, 대화방 목록, 메시지 조회 |
 | [캘린더](docs/guide/calendar.md) | 캘린더와 일정 조회 |
+| [공식 API 전체 명령](docs/guide/api-commands.md) | 공식 API 문서의 나머지 기능과 관리 API 를 부르는 방법 |
 | [문체 페르소나](docs/guide/persona.md) | 내 Dooray 글을 모아 에이전트가 내 문체로 쓰게 하는 스킬 |
 | [스킬 문서](skills/dooray-cli/SKILL.md) | 에이전트가 읽는 명령 목록과 판단 기준 |
 

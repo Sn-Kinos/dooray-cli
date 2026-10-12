@@ -1,6 +1,7 @@
 # 캘린더
 
-캘린더와 일정은 읽기만 지원한다. 만들거나 고치거나 지우는 명령은 없다.
+이 문서는 캘린더와 일정을 읽는 명령을 다룬다.
+캘린더·일정을 만들고 고치고 지우는 명령(`calendar create`, `calendar event create` 등)은 [공식 API 전체 명령](api-commands.md)을 따른다.
 
 ```bash
 dooray calendar list                                  # 접근 가능한 캘린더 목록

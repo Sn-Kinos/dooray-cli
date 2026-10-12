@@ -16,3 +16,6 @@ node_modules/
 .claude/worktrees/
 worktrees/
 .claude/scheduled_tasks.lock
+
+# 진행 지도 (로컬 전용)
+.project-map/
