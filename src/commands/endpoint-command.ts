@@ -17,7 +17,7 @@ import { checkOutputFile, saveDownload } from "../utils/download-target.js";
 import { DoorayCliError } from "../utils/errors.js";
 import { EXIT_CONFIG_ERROR, EXIT_PARAM_ERROR } from "../utils/exit-codes.js";
 
-const kebab = (name: string): string => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`).replace(/\./g, "-");
+const kebab = (name: string): string => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`).replace(/[._]/g, "-");
 const headerFlag = (name: string): string => name.toLowerCase();
 const camel = (flag: string): string => flag.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 

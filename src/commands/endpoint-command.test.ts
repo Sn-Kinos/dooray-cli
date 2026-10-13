@@ -96,14 +96,14 @@ describe("mountEndpoints 로 만든 명령", () => {
       command: "thing update",
       description: "갱신",
       method: "PUT", path: "x/v1/things/{thing-id}/parts/{part-id}",
-      query: [{ name: "parentId", description: "상위" }],
+      query: [{ name: "parentId", description: "상위" }, { name: "board_id", description: "게시판" }],
       body: { fields: "name" },
     };
-    await run([spec], ["thing", "update", "a b", "7", "--parent-id", "9", "--data", '{"name":"n","id":1234567890123456789}']);
+    await run([spec], ["thing", "update", "a b", "7", "--parent-id", "9", "--board-id", "3", "--data", '{"name":"n","id":1234567890123456789}']);
     expect(seen).toEqual([
       {
         method: "PUT",
-        url: "/x/v1/things/a%20b/parts/7?parentId=9",
+        url: "/x/v1/things/a%20b/parts/7?parentId=9&board_id=3",
         auth: "dooray-api svc-key",
         contentType: "application/json",
         dlp: "",
